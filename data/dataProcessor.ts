@@ -1,6 +1,15 @@
 import type { DashboardData, FilterState, TrafficItemData, FunnelViewData, MacroData } from '../types';
 import { limparNumero } from '../utils/currency';
 
+// Helper to parse ISO strings into Local Time correctly
+const getLocalDateString = (isoString: string) => {
+    const d = new Date(isoString);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
+
 // --- DATE FILTERING ---
 
 const getFilterDates = (period: FilterState['period'], startDateStr?: string, endDateStr?: string) => {
@@ -276,18 +285,23 @@ const processFacebookInsights = (
                 clicks: 0,
                 sales: 0,
                 revenue: 0,
+                fb_sales: 0,
+                fb_revenue: 0,
+                platform_sales: 0,
+                platform_revenue: 0,
                 visits: 0,
                 checkouts: 0,
                 campaignName: context.campaign_name,
                 adsetName: context.adset_name,
-                // Facebook API doesn't give UTMs directly in insights, so we leave empty or map if possible
-                // For now, we rely on the names.
             };
             existing.spent += spend;
             existing.impressions += impressions;
             existing.clicks += clicks;
             existing.visits += visits;
             existing.checkouts += checkouts;
+            
+            existing.fb_sales += purchases;
+            existing.fb_revenue += purchaseValue;
 
             if (salesSource === 'facebook') {
                 existing.sales += purchases;
@@ -302,10 +316,6 @@ const processFacebookInsights = (
         updateMap(adsMap, insight.ad_name, insight.ad_name, insight);
     });
 
-    // If sales source is platform, we need to match Supabase sales to these items
-    // This is tricky because Facebook Insights doesn't have UTMs easily accessible in this endpoint
-    // We would need to match by Campaign Name / Ad Name if the UTMs match those names.
-    // Assuming standard naming convention: utm_campaign = campaign_name, utm_content = ad_name
     if (salesSource === 'platform') {
         const matchSales = (map: Map<string, any>, utmKey: string) => {
              supabaseSales.forEach(sale => {
@@ -316,16 +326,27 @@ const processFacebookInsights = (
                     const utmValue = sale[utmKey];
                     if (utmValue && map.has(utmValue)) {
                         const item = map.get(utmValue);
-                        item.sales += 1;
-                        item.revenue += Number(sale.amount || 0);
+                        item.platform_sales += 1;
+                        item.platform_revenue += Number(sale.amount || 0);
                     }
                 }
             });
         };
 
         matchSales(campaignsMap, 'utm_campaign');
-        matchSales(adsetsMap, 'utm_medium'); // Usually adset name
-        matchSales(adsMap, 'utm_content'); // Usually ad name
+        matchSales(adsetsMap, 'utm_medium'); 
+        matchSales(adsMap, 'utm_content'); 
+
+        // HYBRID MERGE: Use the max of Facebook and Platform
+        const applyHybrid = (map: Map<string, any>) => {
+            map.forEach(item => {
+                item.sales = Math.max(item.fb_sales, item.platform_sales);
+                item.revenue = Math.max(item.fb_revenue, item.platform_revenue);
+            });
+        };
+        applyHybrid(campaignsMap);
+        applyHybrid(adsetsMap);
+        applyHybrid(adsMap);
     }
 
     const transformToTrafficItem = (map: Map<string, any>): TrafficItemData[] => {
@@ -578,7 +599,7 @@ export const processApiData = (
                 
                 if (isApproved) {
                     // Extract YYYY-MM-DD from ISO string
-                    const date = sale.created_at.split('T')[0];
+                    const date = getLocalDateString(sale.created_at);
                     
                     const existing = historyMap.get(date) || { investment: 0, revenue: 0 };
                     existing.revenue += Number(sale.amount || 0);
@@ -772,13 +793,10 @@ export const processApiData = (
             const isApproved = status === 'aprovada' || status === 'approved' || status === 'completa' || status === 'paid';
             
             if (isApproved) {
-                let date = sale.created_at.split('.')[0];
-                if (!isSingleDay) {
-                    date = date.split('T')[0];
-                } else {
-                    const parts = date.split('T');
-                    const timeParts = parts[1].split(':');
-                    date = `${parts[0]}T${timeParts[0]}:00:00`;
+                let date = getLocalDateString(sale.created_at);
+                if (isSingleDay) {
+                    const d = new Date(sale.created_at);
+                    date = `${date}T${String(d.getHours()).padStart(2, '0')}:00:00`;
                 }
                 const existing = historyMap.get(date) || { investment: 0, revenue: 0 };
                 existing.revenue += Number(sale.amount || 0);

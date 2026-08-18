@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import type { UserProfile, AdAccount } from '../types';
 import { CopyIcon } from '../components/icons';
-import { Globe, Code, Facebook, Save, Bell, Plus, Trash2, UploadCloud } from 'lucide-react';
+import { Globe, Code, Share2, Save, Bell, Plus, Trash2, UploadCloud } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { supabase } from '../supabaseClient';
 import Papa from 'papaparse';
@@ -526,7 +526,7 @@ console.log('%cScaleMetrics Rastreio Híbrido V5 - Ativo', 'color: #00ff00; font
                 <div className="p-6 border-b border-gray-700">
                     <div className="flex items-center space-x-4">
                         <div className="p-2 bg-blue-600/20 rounded-lg">
-                            <Facebook className="w-6 h-6 text-blue-500" />
+                            <Share2 className="w-6 h-6 text-blue-500" />
                         </div>
                         <div>
                             <h3 className="text-lg font-bold text-brand-text">Conexão Facebook API</h3>
