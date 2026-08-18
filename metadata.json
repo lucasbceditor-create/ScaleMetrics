@@ -1,0 +1,5 @@
+{
+  "name": "Dashboard de Escala SPA",
+  "description": "Uma Single Page Application para análise profunda de tráfego pago, com abas para Visão Macro, Análise de Tráfego e Engenharia de Funil, utilizando gráficos interativos.",
+  "requestFramePermissions": []
+}
