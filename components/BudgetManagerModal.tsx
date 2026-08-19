@@ -39,31 +39,36 @@ const BudgetCard: React.FC<BudgetCardProps> = ({
   const isActive = status === 'ACTIVE';
 
   return (
-    <div className={`bg-gray-900/60 border border-gray-800 rounded-xl p-4 transition-all ${indent ? 'ml-2 sm:ml-6' : ''} ${isEditing ? 'ring-1 ring-blue-500/50 border-blue-500/30' : 'hover:border-gray-700'}`}>
-      {/* Top row: status + name */}
-      <div className="flex items-start justify-between gap-3 mb-3">
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-white truncate">{name}</p>
-          <div className="flex items-center gap-2 mt-1">
-            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium uppercase tracking-wide ${isActive ? 'bg-green-500/15 text-green-400 border border-green-500/20' : 'bg-gray-700/50 text-gray-400 border border-gray-600/30'}`}>
-              <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-green-400' : 'bg-gray-500'}`} />
-              {isActive ? 'Ativo' : 'Pausado'}
-            </span>
-            <span className="text-[10px] text-gray-500">{isLifetime ? 'Vitalício' : 'Diário'}</span>
-          </div>
-        </div>
+    <div className={`bg-[#181926] border border-[#2A2B3A] rounded-2xl p-4 transition-all ${indent ? 'ml-4' : ''}`}>
+      {/* Top row: name */}
+      <p className="text-[15px] font-medium text-white mb-2 leading-tight">{name}</p>
+      
+      {/* Second row: status + type */}
+      <div className="flex items-center gap-2 mb-4">
+        {isActive ? (
+          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-[#0F291E] text-[#2ECC71] text-[10px] font-bold uppercase tracking-wide border border-[#1A3F2D]">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#2ECC71]" />
+            Ativo
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-[#252636] text-[#8E8E9F] text-[10px] font-bold uppercase tracking-wide border border-[#323348]">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#8E8E9F]" />
+            Pausado
+          </span>
+        )}
+        <span className="text-[12px] text-[#8E8E9F]">{isLifetime ? 'Vitalício' : 'Diário'}</span>
       </div>
 
-      {/* Budget row */}
+      {/* Third row: Budget and Edit Button */}
       {isEditing ? (
         <div className="space-y-3">
           <div className="flex items-center gap-2">
-            <span className="text-gray-400 text-sm font-medium">R$</span>
+            <span className="text-[#8E8E9F] text-lg font-medium">R$</span>
             <input
               type="number"
               value={editValue}
               onChange={(e) => onEditValueChange(e.target.value)}
-              className="flex-1 bg-gray-950 border border-gray-700 rounded-lg px-3 py-2.5 text-white text-lg font-bold text-right focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 outline-none transition-all"
+              className="flex-1 bg-[#0F101A] border border-[#2A2B3A] rounded-xl px-4 py-3 text-white text-xl font-bold focus:border-[#3B82F6] focus:ring-1 focus:ring-[#3B82F6]/50 outline-none transition-all"
               autoFocus
               inputMode="decimal"
             />
@@ -72,29 +77,28 @@ const BudgetCard: React.FC<BudgetCardProps> = ({
             <button
               onClick={() => onSave(id, isLifetime)}
               disabled={saving}
-              className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-green-600 hover:bg-green-500 disabled:opacity-50 rounded-lg text-white text-sm font-medium transition-colors"
+              className="flex-1 flex items-center justify-center gap-2 py-3 bg-[#3B82F6] hover:bg-[#2563EB] disabled:opacity-50 rounded-xl text-white text-sm font-bold transition-colors shadow-lg shadow-blue-500/20"
             >
-              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+              {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Check className="w-5 h-5" />}
               {saving ? 'Salvando...' : 'Salvar'}
             </button>
             <button
               onClick={onCancel}
               disabled={saving}
-              className="px-4 py-2.5 bg-gray-800 hover:bg-gray-700 disabled:opacity-50 rounded-lg text-gray-300 text-sm font-medium transition-colors"
+              className="px-6 py-3 bg-[#2A2B3A] hover:bg-[#323348] disabled:opacity-50 rounded-xl text-white text-sm font-bold transition-colors"
             >
               Cancelar
             </button>
           </div>
         </div>
       ) : (
-        <div className="flex items-center justify-between">
-          <span className="text-xl font-bold text-white">{formatCurrency(budgetVal)}</span>
+        <div className="flex items-center justify-between mt-1">
+          <span className="text-2xl font-bold text-white tracking-tight">{formatCurrency(budgetVal)}</span>
           <button
             onClick={() => onStartEdit(id, budgetStr)}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 hover:border-blue-500/40 rounded-lg text-blue-400 text-sm font-medium transition-all"
+            className="flex items-center justify-center w-11 h-11 bg-[#1A233A] hover:bg-[#1E2B4D] border border-[#24355C] rounded-[14px] text-[#4E88FF] transition-all active:scale-95"
           >
-            <Edit2 className="w-3.5 h-3.5" />
-            Editar
+            <Edit2 className="w-[18px] h-[18px]" strokeWidth={2.5} />
           </button>
         </div>
       )}
@@ -184,35 +188,30 @@ export const BudgetManagerModal: React.FC<BudgetManagerModalProps> = ({ isOpen, 
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm">
-      <div className="bg-brand-secondary border border-gray-800 rounded-t-2xl sm:rounded-2xl w-full sm:max-w-lg shadow-2xl flex flex-col max-h-[95vh] sm:max-h-[85vh] sm:mx-4">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm">
+      <div className="bg-[#151623] border border-[#2A2B3A] rounded-t-[28px] sm:rounded-2xl w-full sm:max-w-md shadow-2xl flex flex-col max-h-[90vh] sm:max-h-[85vh] sm:mx-4">
         
         {/* Header */}
-        <div className="flex items-center justify-between p-4 sm:p-5 border-b border-gray-800 flex-shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-purple-500/20 rounded-xl">
-              <DollarSign className="w-5 h-5 text-purple-400" />
+        <div className="flex items-center justify-between p-5 border-b border-[#2A2B3A] flex-shrink-0">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-[#381E48] rounded-2xl flex items-center justify-center w-12 h-12">
+              <DollarSign className="w-6 h-6 text-[#A78BFA]" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-white">Orçamentos</h2>
+              <h2 className="text-xl font-medium text-white mb-0.5">Orçamentos</h2>
               {!loading && campaigns.length > 0 && (
-                <p className="text-xs text-gray-400">
-                  {campaigns.length} campanha{campaigns.length !== 1 ? 's' : ''} · Total: {formatCurrency(totalBudget)}/dia
+                <p className="text-[13px] text-[#8E8E9F]">
+                  {campaigns.length} campanhas · Total: {formatCurrency(totalBudget)}/dia
                 </p>
               )}
             </div>
           </div>
           <div className="flex items-center gap-1">
-            <button 
-              onClick={loadData}
-              disabled={loading}
-              className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
-              title="Atualizar"
-            >
-              <RefreshCw className={`w-4 h-4 text-gray-400 ${loading ? 'animate-spin' : ''}`} />
+            <button onClick={loadData} disabled={loading} className="p-2 hover:bg-[#2A2B3A] rounded-xl transition-colors">
+              <RefreshCw className={`w-5 h-5 text-[#8E8E9F] ${loading ? 'animate-spin' : ''}`} />
             </button>
-            <button onClick={onClose} className="p-2 hover:bg-gray-800 rounded-lg transition-colors">
-              <X className="w-5 h-5 text-gray-400" />
+            <button onClick={onClose} className="p-2 hover:bg-[#2A2B3A] rounded-xl transition-colors">
+              <X className="w-6 h-6 text-[#8E8E9F]" />
             </button>
           </div>
         </div>
@@ -221,11 +220,11 @@ export const BudgetManagerModal: React.FC<BudgetManagerModalProps> = ({ isOpen, 
         <div className="flex-1 overflow-y-auto p-4 sm:p-5 overscroll-contain">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-16 gap-3">
-              <Loader2 className="w-8 h-8 text-purple-500 animate-spin" />
-              <p className="text-sm text-gray-400">Carregando do Facebook...</p>
+              <Loader2 className="w-8 h-8 text-[#A78BFA] animate-spin" />
+              <p className="text-sm text-[#8E8E9F]">Carregando do Facebook...</p>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-4">
               
               {/* CBO Campaigns */}
               {cboCampaigns.length > 0 && (

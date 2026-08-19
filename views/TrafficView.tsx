@@ -123,48 +123,48 @@ const TrafficView: React.FC<TrafficViewProps> = ({ campaigns, adsets, ads, macro
             </div>
 
             {/* Sub-Navegação (Tabs) */}
-            <div className="flex items-center justify-between">
-                <div className="flex space-x-1 bg-brand-secondary p-1 rounded-lg w-fit">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex space-x-1 bg-brand-secondary p-1 rounded-lg w-full sm:w-fit overflow-x-auto">
                     <button
                         onClick={() => { setActiveTab('campaigns'); setSortConfig({ key: 'sales', direction: 'descending' }); }}
-                        className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${activeTab === 'campaigns' ? 'bg-brand-accent text-white shadow-sm' : 'text-brand-text-secondary hover:text-brand-text hover:bg-gray-700'}`}
+                        className={`px-4 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap ${activeTab === 'campaigns' ? 'bg-brand-accent text-white shadow-sm' : 'text-brand-text-secondary hover:text-brand-text hover:bg-gray-700'}`}
                     >
                         Campanhas
                     </button>
                     <button
                         onClick={() => { setActiveTab('adsets'); setSortConfig({ key: 'sales', direction: 'descending' }); }}
-                        className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${activeTab === 'adsets' ? 'bg-brand-accent text-white shadow-sm' : 'text-brand-text-secondary hover:text-brand-text hover:bg-gray-700'}`}
+                        className={`px-4 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap ${activeTab === 'adsets' ? 'bg-brand-accent text-white shadow-sm' : 'text-brand-text-secondary hover:text-brand-text hover:bg-gray-700'}`}
                     >
                         Conjuntos
                     </button>
                     <button
                         onClick={() => { setActiveTab('ads'); setSortConfig({ key: 'sales', direction: 'descending' }); }}
-                        className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${activeTab === 'ads' ? 'bg-brand-accent text-white shadow-sm' : 'text-brand-text-secondary hover:text-brand-text hover:bg-gray-700'}`}
+                        className={`px-4 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap ${activeTab === 'ads' ? 'bg-brand-accent text-white shadow-sm' : 'text-brand-text-secondary hover:text-brand-text hover:bg-gray-700'}`}
                     >
                         Anúncios
                     </button>
                 </div>
                 
-                <div className="flex items-center gap-4">
+                <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
                     {onOpenBudgetManager && (
                         <button 
                             onClick={onOpenBudgetManager}
-                            className="flex items-center gap-2 px-4 py-2 bg-purple-600/20 text-purple-400 hover:bg-purple-600/30 hover:text-purple-300 rounded-md transition-colors font-medium text-sm border border-purple-500/30"
+                            className="flex-1 sm:flex-none justify-center flex items-center gap-2 px-4 py-2 bg-purple-600/20 text-purple-400 hover:bg-purple-600/30 hover:text-purple-300 rounded-md transition-colors font-medium text-sm border border-purple-500/30 whitespace-nowrap"
                         >
                             <DollarSign className="w-4 h-4" />
-                            Orçamentos (CBO/ABO)
+                            Orçamentos
+                        </button>
+                    )}
+
+                    {(selectedCampaigns.length > 0 || selectedAdSets.length > 0) && (
+                        <button 
+                            onClick={() => { setSelectedCampaigns([]); setSelectedAdSets([]); }}
+                            className="text-xs text-brand-accent hover:underline font-medium"
+                        >
+                            Limpar Filtros ({selectedCampaigns.length + selectedAdSets.length})
                         </button>
                     )}
                 </div>
-
-                {(selectedCampaigns.length > 0 || selectedAdSets.length > 0) && (
-                    <button 
-                        onClick={() => { setSelectedCampaigns([]); setSelectedAdSets([]); }}
-                        className="text-xs text-brand-accent hover:underline font-medium"
-                    >
-                        Limpar Filtros ({selectedCampaigns.length + selectedAdSets.length})
-                    </button>
-                )}
             </div>
 
             <div className="bg-brand-secondary rounded-lg shadow-md text-sm overflow-x-auto w-full">
