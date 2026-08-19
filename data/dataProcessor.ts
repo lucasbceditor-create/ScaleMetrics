@@ -500,34 +500,35 @@ export const processApiData = (
         adsSalesCount = globalTotals.sales;
         
     } else {
-        // Platform/Webhook Source (Hybrid Logic)
-        // Ads revenue comes from the Hybrid Math.max calculation (globalTotals)
-        // Organic revenue comes from Supabase Filtered Sales that DO NOT match any campaign
+        // Platform/Webhook Source (Legacy Logic)
+        // Real Revenue comes strictly from Supabase Filtered Sales to prevent double counting (FB + Platform)
         
+        // Identify which sales are from ads (based on campaigns match)
         const campaignNames = new Set(campaignsData.map(c => c.name));
-        let platformOrganicRevenue = 0;
-        let platformOrganicSalesCount = 0;
         
         filteredSales.forEach(sale => {
             const amount = Number(sale.amount || 0);
             const status = (sale.status || '').toLowerCase();
+            
             const isApproved = status === 'aprovada' || status === 'approved' || status === 'completa' || status === 'paid';
 
             if (isApproved) {
-                // If the sale does NOT have a UTM that matches an active campaign, it's organic
-                if (!sale.utm_campaign || !campaignNames.has(sale.utm_campaign)) {
-                    platformOrganicRevenue += amount;
-                    platformOrganicSalesCount += 1;
+                realRevenue += amount;
+                realSalesCount += 1;
+                
+                // Se a venda tem UTM de uma campanha existente, é Ads.
+                if (sale.utm_campaign && campaignNames.has(sale.utm_campaign)) {
+                    adsRevenue += amount;
+                    adsSalesCount += 1;
                 }
             }
         });
-
-        adsRevenue = globalTotals.revenue;
-        adsSalesCount = globalTotals.sales;
         
-        // Real Revenue is Hybrid Ads + Platform Organic
-        realRevenue = adsRevenue + platformOrganicRevenue;
-        realSalesCount = adsSalesCount + platformOrganicSalesCount;
+        // Se a soma do Facebook para as campanhas for MAIOR que o que a plataforma marcou (por falha de UTM),
+        // o total de Ads reflete o que as campanhas mostram (Math.max já aplicado no globalTotals), 
+        // MAS limitamos ao Total Real para não criar dinheiro falso.
+        adsRevenue = Math.min(globalTotals.revenue, realRevenue);
+        adsSalesCount = Math.min(globalTotals.sales, realSalesCount);
     }
 
     const organicRevenue = realRevenue - adsRevenue;
