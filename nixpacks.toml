@@ -7,4 +7,4 @@ cmds = ["npm ci || npm install"]
 cmds = ["npm run build"]
 
 [start]
-cmd = "npx --yes serve@latest -s dist -l 3000"
+cmd = "npx --yes serve@latest -s dist -l tcp://0.0.0.0:3000"
