@@ -10,6 +10,7 @@ import SettingsView from './views/SettingsView';
 import IntegrationsView from './views/IntegrationsView';
 import SetupGuideView from './views/SetupGuideView';
 import ManualSaleModal from './components/ManualSaleModal';
+import { BudgetManagerModal } from './components/BudgetManagerModal';
 import { processApiData } from './data/dataProcessor';
 import type { DashboardData, FilterState, UserProfile, AdAccount } from './types';
 import { supabase } from './supabaseClient';
@@ -32,6 +33,7 @@ const Dashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isAdvancedFiltersOpen, setIsAdvancedFiltersOpen] = useState(false);
     const [isManualSaleModalOpen, setIsManualSaleModalOpen] = useState(false);
+    const [isBudgetManagerOpen, setIsBudgetManagerOpen] = useState(false);
     const [salesData, setSalesData] = useState<any[]>([]);
     const [rawApiResponse, setRawApiResponse] = useState<any>(null);
     const abortControllerRef = useRef<AbortController | null>(null);
@@ -537,6 +539,7 @@ const Dashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
                                     adsets={data!.adsets} 
                                     ads={data!.ads} 
                                     macroData={data!.macro} 
+                                    onOpenBudgetManager={() => setIsBudgetManagerOpen(true)}
                                 />
                             );
                         case 'funnel':
@@ -578,6 +581,15 @@ const Dashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
                 {renderContent()}
             </main>
             
+            
+            {profile && (
+                <BudgetManagerModal
+                    isOpen={isBudgetManagerOpen}
+                    onClose={() => setIsBudgetManagerOpen(false)}
+                    accessToken={profile.fb_access_token || ''}
+                    adAccountIds={profile.ad_account_ids || []}
+                />
+            )}
             {profile && (
                 <ManualSaleModal 
                     isOpen={isManualSaleModalOpen}

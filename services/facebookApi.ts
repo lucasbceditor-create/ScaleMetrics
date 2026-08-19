@@ -177,3 +177,102 @@ export const fetchFacebookInsights = async (
 
   return allInsights;
 };
+
+
+// --- Budget Manager Functions ---
+
+export interface FacebookCampaign {
+  id: string;
+  name: string;
+  status: string;
+  daily_budget?: string;
+  lifetime_budget?: string;
+}
+
+export interface FacebookAdSet {
+  id: string;
+  campaign_id: string;
+  name: string;
+  status: string;
+  daily_budget?: string;
+  lifetime_budget?: string;
+}
+
+export const fetchCampaignsAndAdsets = async (accessToken: string, adAccountIds: any) => {
+  let parsedIds: string[] = [];
+  try {
+    const rawData = typeof adAccountIds === 'string' ? adAccountIds.trim() : adAccountIds;
+    if (typeof rawData === 'string') {
+      if (rawData.startsWith('[') || rawData.startsWith('{')) {
+        const parsed = JSON.parse(rawData);
+        if (Array.isArray(parsed)) {
+          parsedIds = parsed.map((acc: any) => typeof acc === 'object' && acc !== null ? acc.id : String(acc));
+        } else if (typeof parsed === 'object' && parsed !== null) {
+          parsedIds = [parsed.id || parsed];
+        }
+      } else if (rawData.includes(',')) {
+        parsedIds = rawData.split(',').map(id => id.trim());
+      } else if (rawData) {
+        parsedIds = [rawData];
+      }
+    } else if (Array.isArray(rawData)) {
+      parsedIds = rawData.map((acc: any) => typeof acc === 'object' && acc !== null ? acc.id : String(acc));
+    }
+  } catch {
+    if (typeof adAccountIds === 'string') parsedIds = adAccountIds.split(',').map(id => id.trim());
+    else parsedIds = Array.isArray(adAccountIds) ? adAccountIds.map(String) : [];
+  }
+
+  const cleanIds = Array.from(new Set(parsedIds.filter(Boolean).map(id => 'act_' + String(id).trim().replace('act_', ''))));
+
+  const allCampaigns: FacebookCampaign[] = [];
+  const allAdSets: FacebookAdSet[] = [];
+
+  for (const accountId of cleanIds) {
+    // Fetch Campaigns
+    let campUrl = `https://graph.facebook.com/v23.0/${accountId}/campaigns?fields=id,name,status,daily_budget,lifetime_budget&effective_status=['ACTIVE','PAUSED']&access_token=${accessToken}&limit=100`;
+    while (campUrl) {
+      const res = await fetch(campUrl);
+      if (!res.ok) break;
+      const data = await res.json();
+      if (data.data) allCampaigns.push(...data.data);
+      campUrl = data.paging?.next || '';
+    }
+
+    // Fetch AdSets
+    let adsetUrl = `https://graph.facebook.com/v23.0/${accountId}/adsets?fields=id,campaign_id,name,status,daily_budget,lifetime_budget&effective_status=['ACTIVE','PAUSED']&access_token=${accessToken}&limit=100`;
+    while (adsetUrl) {
+      const res = await fetch(adsetUrl);
+      if (!res.ok) break;
+      const data = await res.json();
+      if (data.data) allAdSets.push(...data.data);
+      adsetUrl = data.paging?.next || '';
+    }
+  }
+  return { campaigns: allCampaigns, adsets: allAdSets };
+};
+
+export const updateFacebookBudget = async (
+  accessToken: string,
+  objectId: string,
+  newBudgetInCents: number,
+  isLifetime: boolean
+) => {
+  const budgetField = isLifetime ? 'lifetime_budget' : 'daily_budget';
+  const url = `https://graph.facebook.com/v23.0/${objectId}`;
+  
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      [budgetField]: newBudgetInCents,
+      access_token: accessToken
+    })
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.error?.message || 'Erro ao atualizar orçamento no Facebook');
+  }
+  return await response.json();
+};

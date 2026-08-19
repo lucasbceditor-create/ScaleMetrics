@@ -1,12 +1,13 @@
 import React, { useState, useMemo } from 'react';
 import type { TrafficItemData, MacroData } from '../types';
-import { ArrowUpDown } from 'lucide-react';
+import { ArrowUpDown, DollarSign } from 'lucide-react';
 
 interface TrafficViewProps {
     campaigns: TrafficItemData[];
     adsets: TrafficItemData[];
     ads: TrafficItemData[];
     macroData: MacroData;
+    onOpenBudgetManager?: () => void;
 }
 
 type SortKey = keyof Omit<TrafficItemData, 'name'>;
@@ -28,7 +29,7 @@ const SortableHeader: React.FC<{ sortKey: SortKey, label: string, onClick: (key:
     </button>
 );
 
-const TrafficView: React.FC<TrafficViewProps> = ({ campaigns, adsets, ads, macroData }) => {
+const TrafficView: React.FC<TrafficViewProps> = ({ campaigns, adsets, ads, macroData, onOpenBudgetManager }) => {
     const [activeTab, setActiveTab] = useState<'campaigns' | 'adsets' | 'ads'>('ads');
     const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'sales', direction: 'descending' });
     const [selectedCampaigns, setSelectedCampaigns] = useState<string[]>([]);
@@ -142,6 +143,18 @@ const TrafficView: React.FC<TrafficViewProps> = ({ campaigns, adsets, ads, macro
                     >
                         Anúncios
                     </button>
+                </div>
+                
+                <div className="flex items-center gap-4">
+                    {onOpenBudgetManager && (
+                        <button 
+                            onClick={onOpenBudgetManager}
+                            className="flex items-center gap-2 px-4 py-2 bg-purple-600/20 text-purple-400 hover:bg-purple-600/30 hover:text-purple-300 rounded-md transition-colors font-medium text-sm border border-purple-500/30"
+                        >
+                            <DollarSign className="w-4 h-4" />
+                            Orçamentos (CBO/ABO)
+                        </button>
+                    )}
                 </div>
 
                 {(selectedCampaigns.length > 0 || selectedAdSets.length > 0) && (
