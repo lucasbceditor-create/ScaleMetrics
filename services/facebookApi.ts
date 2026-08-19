@@ -91,52 +91,50 @@ export const fetchFacebookInsights = async (
   const { since, until } = getFacebookDateRange(filter);
   const timeRange = JSON.stringify({ since, until });
   
+  const extractId = (acc: any): string => {
+    if (typeof acc === 'object' && acc !== null) return acc.id || String(acc);
+    if (typeof acc === 'string') {
+      const t = acc.trim();
+      if (t.startsWith('{')) {
+        try { return JSON.parse(t).id || t; } catch { return t; }
+      }
+      return t;
+    }
+    return String(acc);
+  };
+
   let parsedIds: string[] = [];
 
   // Robust parsing logic as requested
   try {
-    // If it's already an array, we handle it, but if it's a string (possibly JSON), we parse it.
     const rawData = typeof adAccountIds === 'string' ? adAccountIds.trim() : adAccountIds;
-    
     if (typeof rawData === 'string') {
       if (rawData.startsWith('[') || rawData.startsWith('{')) {
         const parsed = JSON.parse(rawData);
         if (Array.isArray(parsed)) {
-          parsedIds = parsed.map((acc: any) => {
-            if (typeof acc === 'object' && acc !== null) return acc.id;
-            return String(acc);
-          });
+          parsedIds = parsed.map(extractId);
         } else if (typeof parsed === 'object' && parsed !== null) {
-          parsedIds = [parsed.id || parsed];
+          parsedIds = [parsed.id || String(parsed)];
         }
       } else if (rawData.includes(',')) {
-        parsedIds = rawData.split(',').map(id => id.trim());
+        parsedIds = rawData.split(',');
       } else if (rawData) {
         parsedIds = [rawData];
       }
     } else if (Array.isArray(rawData)) {
-      parsedIds = rawData.map((acc: any) => {
-        if (typeof acc === 'object' && acc !== null) return acc.id;
-        return String(acc);
-      });
+      parsedIds = rawData.map(extractId);
     }
   } catch {
-    // Fallback for comma-separated string if JSON.parse fails
-    if (typeof adAccountIds === 'string') {
-      parsedIds = adAccountIds.split(',').map(id => id.trim());
-    } else {
-      parsedIds = Array.isArray(adAccountIds) ? adAccountIds.map(String) : [];
-    }
+    if (typeof adAccountIds === 'string') parsedIds = adAccountIds.split(',');
+    else parsedIds = Array.isArray(adAccountIds) ? adAccountIds.map(String) : [];
   }
 
   // Clean IDs: Absolute Sanitization
   const cleanIds = Array.from(new Set(
     parsedIds
+      .map(extractId)
       .filter(Boolean)
-      .map(id => {
-        const cleanId = String(id).trim().replace('act_', '');
-        return 'act_' + cleanId;
-      })
+      .map(id => 'act_' + String(id).trim().replace('act_', ''))
   ));
 
   console.log('🚀 IDs sendo enviados para a API:', cleanIds);
@@ -199,6 +197,18 @@ export interface FacebookAdSet {
 }
 
 export const fetchCampaignsAndAdsets = async (accessToken: string, adAccountIds: any) => {
+  const extractId = (acc: any): string => {
+    if (typeof acc === 'object' && acc !== null) return acc.id || String(acc);
+    if (typeof acc === 'string') {
+      const t = acc.trim();
+      if (t.startsWith('{')) {
+        try { return JSON.parse(t).id || t; } catch { return t; }
+      }
+      return t;
+    }
+    return String(acc);
+  };
+
   let parsedIds: string[] = [];
   try {
     const rawData = typeof adAccountIds === 'string' ? adAccountIds.trim() : adAccountIds;
@@ -206,24 +216,24 @@ export const fetchCampaignsAndAdsets = async (accessToken: string, adAccountIds:
       if (rawData.startsWith('[') || rawData.startsWith('{')) {
         const parsed = JSON.parse(rawData);
         if (Array.isArray(parsed)) {
-          parsedIds = parsed.map((acc: any) => typeof acc === 'object' && acc !== null ? acc.id : String(acc));
+          parsedIds = parsed.map(extractId);
         } else if (typeof parsed === 'object' && parsed !== null) {
-          parsedIds = [parsed.id || parsed];
+          parsedIds = [parsed.id || String(parsed)];
         }
       } else if (rawData.includes(',')) {
-        parsedIds = rawData.split(',').map(id => id.trim());
+        parsedIds = rawData.split(',');
       } else if (rawData) {
         parsedIds = [rawData];
       }
     } else if (Array.isArray(rawData)) {
-      parsedIds = rawData.map((acc: any) => typeof acc === 'object' && acc !== null ? acc.id : String(acc));
+      parsedIds = rawData.map(extractId);
     }
   } catch {
-    if (typeof adAccountIds === 'string') parsedIds = adAccountIds.split(',').map(id => id.trim());
+    if (typeof adAccountIds === 'string') parsedIds = adAccountIds.split(',');
     else parsedIds = Array.isArray(adAccountIds) ? adAccountIds.map(String) : [];
   }
 
-  const cleanIds = Array.from(new Set(parsedIds.filter(Boolean).map(id => 'act_' + String(id).trim().replace('act_', ''))));
+  const cleanIds = Array.from(new Set(parsedIds.map(extractId).filter(Boolean).map(id => 'act_' + String(id).trim().replace('act_', ''))));
 
   const allCampaigns: FacebookCampaign[] = [];
   const allAdSets: FacebookAdSet[] = [];
