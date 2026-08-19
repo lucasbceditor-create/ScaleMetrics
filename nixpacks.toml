@@ -7,4 +7,4 @@ cmds = ["npm ci || npm install"]
 cmds = ["npm run build"]
 
 [start]
-cmd = "npm run preview -- --host 0.0.0.0 --port 3000"
+cmd = "npx --yes serve@latest -s dist -l 3000"
