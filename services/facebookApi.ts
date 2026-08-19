@@ -228,22 +228,32 @@ export const fetchCampaignsAndAdsets = async (accessToken: string, adAccountIds:
   const allCampaigns: FacebookCampaign[] = [];
   const allAdSets: FacebookAdSet[] = [];
 
+  const statusFilter = encodeURIComponent('["ACTIVE","PAUSED"]');
+
   for (const accountId of cleanIds) {
     // Fetch Campaigns
-    let campUrl = `https://graph.facebook.com/v23.0/${accountId}/campaigns?fields=id,name,status,daily_budget,lifetime_budget&effective_status=['ACTIVE','PAUSED']&access_token=${accessToken}&limit=100`;
+    let campUrl = `https://graph.facebook.com/v23.0/${accountId}/campaigns?fields=id,name,status,daily_budget,lifetime_budget&effective_status=${statusFilter}&access_token=${accessToken}&limit=100`;
     while (campUrl) {
       const res = await fetch(campUrl);
-      if (!res.ok) break;
+      if (!res.ok) {
+        const err = await res.json();
+        console.error('FB API Error:', err);
+        throw new Error(err.error?.message || 'Failed to fetch campaigns');
+      }
       const data = await res.json();
       if (data.data) allCampaigns.push(...data.data);
       campUrl = data.paging?.next || '';
     }
 
     // Fetch AdSets
-    let adsetUrl = `https://graph.facebook.com/v23.0/${accountId}/adsets?fields=id,campaign_id,name,status,daily_budget,lifetime_budget&effective_status=['ACTIVE','PAUSED']&access_token=${accessToken}&limit=100`;
+    let adsetUrl = `https://graph.facebook.com/v23.0/${accountId}/adsets?fields=id,campaign_id,name,status,daily_budget,lifetime_budget&effective_status=${statusFilter}&access_token=${accessToken}&limit=100`;
     while (adsetUrl) {
       const res = await fetch(adsetUrl);
-      if (!res.ok) break;
+      if (!res.ok) {
+        const err = await res.json();
+        console.error('FB API Error:', err);
+        throw new Error(err.error?.message || 'Failed to fetch adsets');
+      }
       const data = await res.json();
       if (data.data) allAdSets.push(...data.data);
       adsetUrl = data.paging?.next || '';
