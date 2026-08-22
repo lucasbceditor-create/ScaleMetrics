@@ -18,6 +18,7 @@ const ManualSaleModal: React.FC<ManualSaleModalProps> = ({ isOpen, onClose, user
         product_name: '',
         customer_name: '',
         customer_email: '',
+        created_at: '',
         utm_source: '',
         utm_campaign: '',
         utm_medium: '',
@@ -46,7 +47,7 @@ const ManualSaleModal: React.FC<ManualSaleModalProps> = ({ isOpen, onClose, user
                 utm_content: formData.utm_content || null,
                 status: 'paid',
                 platform: 'Manual',
-                created_at: new Date().toISOString()
+                created_at: formData.created_at ? new Date(formData.created_at).toISOString() : new Date().toISOString()
             });
 
             if (error) throw error;
@@ -59,6 +60,7 @@ const ManualSaleModal: React.FC<ManualSaleModalProps> = ({ isOpen, onClose, user
                 product_name: '',
                 customer_name: '',
                 customer_email: '',
+                created_at: '',
                 utm_source: '',
                 utm_campaign: '',
                 utm_medium: '',
@@ -132,6 +134,17 @@ const ManualSaleModal: React.FC<ManualSaleModalProps> = ({ isOpen, onClose, user
                             onChange={e => setFormData({ ...formData, customer_email: e.target.value })}
                             className="w-full bg-gray-800 border-gray-700 rounded-lg text-brand-text focus:ring-brand-accent focus:border-brand-accent"
                         />
+                    </div>
+
+                    <div className="space-y-1">
+                        <label className="text-xs font-semibold text-brand-text-secondary uppercase tracking-wider">Data da Venda</label>
+                        <input
+                            type="datetime-local"
+                            value={formData.created_at}
+                            onChange={e => setFormData({ ...formData, created_at: e.target.value })}
+                            className="w-full bg-gray-800 border-gray-700 rounded-lg text-brand-text focus:ring-brand-accent focus:border-brand-accent"
+                        />
+                        <p className="text-[10px] text-gray-500 mt-1">Deixe vazio para usar a data/hora atual</p>
                     </div>
 
                     {/* UTM Section */}

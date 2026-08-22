@@ -317,36 +317,19 @@ const processFacebookInsights = (
     });
 
     if (salesSource === 'platform') {
-        const matchSales = (map: Map<string, any>, utmKey: string) => {
-             supabaseSales.forEach(sale => {
-                const status = (sale.status || '').toLowerCase();
-                const isApproved = status === 'aprovada' || status === 'approved' || status === 'completa' || status === 'paid';
-                
-                if (isApproved) {
-                    const utmValue = sale[utmKey];
-                    if (utmValue && map.has(utmValue)) {
-                        const item = map.get(utmValue);
-                        item.platform_sales += 1;
-                        item.platform_revenue += Number(sale.amount || 0);
-                    }
-                }
-            });
-        };
-
-        matchSales(campaignsMap, 'utm_campaign');
-        matchSales(adsetsMap, 'utm_medium'); 
-        matchSales(adsMap, 'utm_content'); 
-
-        // HYBRID MERGE: Use the max of Facebook and Platform
-        const applyHybrid = (map: Map<string, any>) => {
+        // Use Facebook data as the PRIMARY source for campaign-level sales.
+        // This prevents double-counting that occurred with Math.max when both
+        // UTM and Facebook reported the same sale to the same campaign.
+        // The macro totals (top cards) still come from Supabase for absolute accuracy.
+        const applyFacebookPrimary = (map: Map<string, any>) => {
             map.forEach(item => {
-                item.sales = Math.max(item.fb_sales, item.platform_sales);
-                item.revenue = Math.max(item.fb_revenue, item.platform_revenue);
+                item.sales = item.fb_sales;
+                item.revenue = item.fb_revenue;
             });
         };
-        applyHybrid(campaignsMap);
-        applyHybrid(adsetsMap);
-        applyHybrid(adsMap);
+        applyFacebookPrimary(campaignsMap);
+        applyFacebookPrimary(adsetsMap);
+        applyFacebookPrimary(adsMap);
     }
 
     const transformToTrafficItem = (map: Map<string, any>): TrafficItemData[] => {
@@ -427,11 +410,24 @@ export const processApiData = (
 
         if (filter.selectedProduct) {
             filteredSales = filteredSales.filter(sale => sale.product_name === filter.selectedProduct);
+            
+            // Bridge: Product → Sales → UTM Campaign → Facebook Campaigns
+            // Extract all utm_campaign values from the product's sales to know which campaigns are related
+            const productCampaignNames = new Set(
+                filteredSales
+                    .map(sale => sale.utm_campaign)
+                    .filter(Boolean)
+            );
+            
+            // Only filter insights if we found at least one UTM campaign for this product
+            if (productCampaignNames.size > 0) {
+                filteredInsights = filteredInsights.filter((insight: any) => 
+                    productCampaignNames.has(insight.campaign_name)
+                );
+            }
         }
 
         if (filter.selectedCampaign) {
-            // Cross-referencing: Filter sales where utm_campaign matches the selected campaign name
-            // Note: This assumes utm_campaign exactly matches the campaign name from Facebook
             filteredSales = filteredSales.filter(sale => sale.utm_campaign === filter.selectedCampaign);
         }
         
@@ -500,33 +496,21 @@ export const processApiData = (
         adsSalesCount = globalTotals.sales;
         
     } else {
-        // Platform/Webhook Source (Legacy Logic)
-        // Real Revenue comes strictly from Supabase Filtered Sales to prevent double counting (FB + Platform)
-        
-        // Identify which sales are from ads (based on campaigns match)
-        const campaignNames = new Set(campaignsData.map(c => c.name));
-        
+        // Platform/Webhook Source
+        // Real Revenue/Sales come strictly from Supabase (source of truth for actual money received)
         filteredSales.forEach(sale => {
             const amount = Number(sale.amount || 0);
             const status = (sale.status || '').toLowerCase();
-            
             const isApproved = status === 'aprovada' || status === 'approved' || status === 'completa' || status === 'paid';
 
             if (isApproved) {
                 realRevenue += amount;
                 realSalesCount += 1;
-                
-                // Se a venda tem UTM de uma campanha existente, é Ads.
-                if (sale.utm_campaign && campaignNames.has(sale.utm_campaign)) {
-                    adsRevenue += amount;
-                    adsSalesCount += 1;
-                }
             }
         });
         
-        // Se a soma do Facebook para as campanhas for MAIOR que o que a plataforma marcou (por falha de UTM),
-        // o total de Ads reflete o que as campanhas mostram (Math.max já aplicado no globalTotals), 
-        // MAS limitamos ao Total Real para não criar dinheiro falso.
+        // Ads revenue/sales come from Facebook (globalTotals already has FB numbers from campaignsData).
+        // Cap at realRevenue so organic never goes negative.
         adsRevenue = Math.min(globalTotals.revenue, realRevenue);
         adsSalesCount = Math.min(globalTotals.sales, realSalesCount);
     }
