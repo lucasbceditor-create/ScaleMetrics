@@ -1,9 +1,20 @@
 import type { DashboardData, FilterState, TrafficItemData, FunnelViewData, MacroData } from '../types';
 import { limparNumero } from '../utils/currency';
 
+// FIX: The Supabase Edge Function saves timestamps that are actually BRT (UTC-3)
+// but tagged with +00 (UTC). When JS parses "2026-08-22 00:05+00", it subtracts 3h
+// and shows it as Aug 21 21:05 BRT — wrong day!
+// This helper strips the +00 offset so JS interprets it as local time (BRT).
+const parseSaleDate = (createdAt: string): Date => {
+    if (!createdAt) return new Date(0);
+    // Remove the timezone offset (+00, +00:00, Z) so JS treats it as local time
+    const stripped = createdAt.replace(/(\+00:?00?|Z)$/i, '').trim();
+    return new Date(stripped);
+};
+
 // Helper to parse ISO strings into Local Time correctly
 const getLocalDateString = (isoString: string) => {
-    const d = new Date(isoString);
+    const d = parseSaleDate(isoString);
     const year = d.getFullYear();
     const month = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
@@ -62,8 +73,8 @@ const filterSalesByDate = (sales: any[], filter: FilterState): any[] => {
 
     return sales.filter(sale => {
         if (!sale.created_at) return false;
-        // Use the full ISO string to let the browser handle the timezone conversion to local time
-        const saleDate = new Date(sale.created_at);
+        // Use parseSaleDate to correctly handle BRT timestamps stored as UTC
+        const saleDate = parseSaleDate(sale.created_at);
         return saleDate >= startDate && saleDate <= endDate;
     });
 };
@@ -660,8 +671,8 @@ export const processApiData = (
                     const isApproved = status === 'aprovada' || status === 'approved' || status === 'completa' || status === 'paid';
                     
                     if (isApproved) {
-                        // Use new Date(sale.created_at) to get the correct local hour
-                        const dateObj = new Date(sale.created_at);
+                        // Use parseSaleDate to get the correct local hour
+                        const dateObj = parseSaleDate(sale.created_at);
                         const hour = dateObj.getHours(); 
                         
                         if (hourlyHistory[hour]) {
@@ -786,7 +797,7 @@ export const processApiData = (
             if (isApproved) {
                 let date = getLocalDateString(sale.created_at);
                 if (isSingleDay) {
-                    const d = new Date(sale.created_at);
+                    const d = parseSaleDate(sale.created_at);
                     date = `${date}T${String(d.getHours()).padStart(2, '0')}:00:00`;
                 }
                 const existing = historyMap.get(date) || { investment: 0, revenue: 0 };
